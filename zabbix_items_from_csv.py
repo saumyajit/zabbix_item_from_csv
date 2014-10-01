@@ -7,6 +7,7 @@ from xml.etree.ElementTree import SubElement
 import logging
 import re
 import datetime
+import sys
 from xml.dom import minidom
 
 def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=False):
@@ -347,20 +348,63 @@ def xml_pretty_me(file_name_for_prettify, string_to_prettify):
     output_file.close()
 
 # --------------------------------------------------------
+# Help Menu
+# --------------------------------------------------------
+def help_menu():
+    logging.error(" Wrong Arguments - Please see below for more information")
+    logging.error("""\n
+     --------------------------------------------
+                        USAGE
+     --------------------------------------------
+
+     1. To Generate xml import file.
+     --------------------------------------------
+     python zabbix_items_from_csv.py <export_csv> <host_name> <host_group_name> <host_interface_name> <host_application_name>
+     \texample: python zabbix_items_from_csv.py oid_list_with_range_processed.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
+
+     Parameter Information
+     --------------------------------------------
+     <csv_file_to_process>  : Is the csv file in format mentioned in the README.md file.
+     <host_name>            : Host name as given in Zabbix server.
+     <host_group_name>      : Host Group which the host belongs to, as in Zabbix server.
+     <host_interface_ip>    : SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)
+     <host_application_name>: Application Name in the Zabbix Server. (To organize all items being imported)
+     --------------------------------------------
+     """)
+    exit()
+
+# --------------------------------------------------------
 # Process CSV to create zabbix items from OID and range.
 # --------------------------------------------------------
 if __name__ == '__main__':
 
-    complete_list_dict_device_1 =  reader_csv_file('oid_list_with_range_processed.csv', 10)
-    xml_tree_device_1 = generate_items_xml_file_complete(complete_list_dict_device_1, 'BLR-DEVICE_1', 'BLR-DEVICE_1', '10.12.51.11', 'DEVICE_1')
-    xml_pretty_me('BLR-DEVICE_1.xml', ElementTree.tostring(xml_tree_device_1))
+    # System Arguments check
+    if len(sys.argv) == 1 or len(sys.argv) != 6:
+        help_menu()
 
-    xml_tree_device_1 = generate_items_xml_file_complete(complete_list_dict_device_1, 'CHN-DEVICE_1', 'CHN-DEVICE_1', '10.12.51.11', 'DEVICE_1')
-    xml_pretty_me('CHN-DEVICE_1.xml', ElementTree.tostring(xml_tree_device_1))
+    csv_file_to_process = sys.argv[1]
+    host_name = sys.argv[2]
+    host_group_name = sys.argv[3]
+    host_interface = sys.argv[4]
+    host_application_items = sys.argv[5]
 
-    complete_list_dict_device_2 =  reader_csv_file('oid_list_with_range_processed.csv')
-    xml_tree_device_2 = generate_items_xml_file_complete(complete_list_dict_device_2, 'BLR-DEVICE_2', 'BLR-DEVICE_2', '12.12.54.66', 'DEVICE_2')
-    xml_pretty_me('BLR-DEVICE_2.xml', ElementTree.tostring(xml_tree_device_2))
+    complete_csv_list_dict =  reader_csv_file(csv_file_to_process)
+    xml_tree_for_device = generate_items_xml_file_complete(complete_csv_list_dict, host_name,
+                                                           host_group_name, host_interface,
+                                                           host_application_items)
+    xml_pretty_me(str(host_name).lower()+'_'+str(host_interface).lower()+'.xml', ElementTree.tostring(xml_tree_for_device))
 
-    xml_tree_device_2 = generate_items_xml_file_complete(complete_list_dict_device_2, 'CHN-DEVICE_2', 'CHN-DEVICE_2', '12.12.52.74', 'DEVICE_2')
-    xml_pretty_me('CHN-DEVICE_2.xml', ElementTree.tostring(xml_tree_device_2))
+
+    # complete_list_dict_device_1 =  reader_csv_file('oid_list_with_range_processed.csv', 10)
+    # xml_tree_device_1 = generate_items_xml_file_complete(complete_list_dict_device_1, 'BLR-DEVICE_1', 'BLR-DEVICE_1', '10.12.51.11', 'DEVICE_1')
+    # xml_pretty_me('BLR-DEVICE_1.xml', ElementTree.tostring(xml_tree_device_1))
+    #
+    # xml_tree_device_1 = generate_items_xml_file_complete(complete_list_dict_device_1, 'CHN-DEVICE_1', 'CHN-DEVICE_1', '10.12.51.11', 'DEVICE_1')
+    # xml_pretty_me('CHN-DEVICE_1.xml', ElementTree.tostring(xml_tree_device_1))
+    #
+    # complete_list_dict_device_2 =  reader_csv_file('oid_list_with_range_processed.csv')
+    # xml_tree_device_2 = generate_items_xml_file_complete(complete_list_dict_device_2, 'BLR-DEVICE_2', 'BLR-DEVICE_2', '12.12.54.66', 'DEVICE_2')
+    # xml_pretty_me('BLR-DEVICE_2.xml', ElementTree.tostring(xml_tree_device_2))
+    #
+    # xml_tree_device_2 = generate_items_xml_file_complete(complete_list_dict_device_2, 'CHN-DEVICE_2', 'CHN-DEVICE_2', '12.12.52.74', 'DEVICE_2')
+    # xml_pretty_me('CHN-DEVICE_2.xml', ElementTree.tostring(xml_tree_device_2))
