@@ -16,7 +16,7 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
     file_reader = open(file_name, "r")
 
     # Skipping header line.
-    if skip_header == True:
+    if skip_header:
         file_reader.next()
 
     #
@@ -59,7 +59,7 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
         line_dict['description'] = list[6].strip()                          # Strip string.
         oid_range_list = []
 
-        if all_oid_range == True:
+        if all_oid_range:
             oid_range_to_use = int(line_dict['end'])
         else:
             oid_range_to_use = 1
