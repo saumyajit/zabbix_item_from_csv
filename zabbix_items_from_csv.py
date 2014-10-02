@@ -186,7 +186,7 @@ def generate_items_xml_file_complete(
             item_creator(row_dict_from_file, items, host_name.upper(), triggers, oid_list_item, item_application_name)
 
 
-    return  zabbix_export
+    return ElementTree.tostring(zabbix_export)
 
 
 def item_creator(dictionary, items, host_name, triggers, oid_list_item_from_dictionary, item_application_name):
@@ -382,29 +382,19 @@ if __name__ == '__main__':
     if len(sys.argv) == 1 or len(sys.argv) != 6:
         help_menu()
 
+    # Assigning Arguments
     csv_file_to_process = sys.argv[1]
     host_name = sys.argv[2]
     host_group_name = sys.argv[3]
     host_interface = sys.argv[4]
     host_application_items = sys.argv[5]
 
+    # Creating a list of dictionaries [{},{},{}, ...]
     complete_csv_list_dict =  reader_csv_file(csv_file_to_process)
+
+    # xml string returned.
     xml_tree_for_device = generate_items_xml_file_complete(complete_csv_list_dict, host_name,
                                                            host_group_name, host_interface,
                                                            host_application_items)
-    xml_pretty_me(str(host_name).lower()+'_'+str(host_interface).lower()+'.xml', ElementTree.tostring(xml_tree_for_device))
-
-
-    # complete_list_dict_device_1 =  reader_csv_file('oid_list_with_range_processed.csv', 10)
-    # xml_tree_device_1 = generate_items_xml_file_complete(complete_list_dict_device_1, 'BLR-DEVICE_1', 'BLR-DEVICE_1', '10.12.51.11', 'DEVICE_1')
-    # xml_pretty_me('BLR-DEVICE_1.xml', ElementTree.tostring(xml_tree_device_1))
-    #
-    # xml_tree_device_1 = generate_items_xml_file_complete(complete_list_dict_device_1, 'CHN-DEVICE_1', 'CHN-DEVICE_1', '10.12.51.11', 'DEVICE_1')
-    # xml_pretty_me('CHN-DEVICE_1.xml', ElementTree.tostring(xml_tree_device_1))
-    #
-    # complete_list_dict_device_2 =  reader_csv_file('oid_list_with_range_processed.csv')
-    # xml_tree_device_2 = generate_items_xml_file_complete(complete_list_dict_device_2, 'BLR-DEVICE_2', 'BLR-DEVICE_2', '12.12.54.66', 'DEVICE_2')
-    # xml_pretty_me('BLR-DEVICE_2.xml', ElementTree.tostring(xml_tree_device_2))
-    #
-    # xml_tree_device_2 = generate_items_xml_file_complete(complete_list_dict_device_2, 'CHN-DEVICE_2', 'CHN-DEVICE_2', '12.12.52.74', 'DEVICE_2')
-    # xml_pretty_me('CHN-DEVICE_2.xml', ElementTree.tostring(xml_tree_device_2))
+    # Write it to file as a pretty xml.
+    xml_pretty_me(str(host_name).lower()+'_'+str(host_interface).lower()+'.xml', xml_tree_for_device)
