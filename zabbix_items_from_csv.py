@@ -283,7 +283,7 @@ def item_creator(dictionary, items, host_name, triggers, oid_list_item_from_dict
     history.text = '90'
     trends.text = '365'
     status.text = '0'
-    snmp_community.text = 'public'
+    snmp_community.text = '{$SNMP_COMMUNITY}'
     multiplier.text = '0'
 
     # Adding Description as in the CSV file.
