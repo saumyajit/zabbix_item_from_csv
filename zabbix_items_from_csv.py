@@ -42,15 +42,22 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
         list = process_line.split(",")
 
         # Getting All data into the dictionary
-        line_dict['module'] = list[0].lower()                           # Converting to lower case
-        line_dict['oid_name'] = re.sub('/', '_per_', list[1].lower())   # removing '/' in field to 'per'
-                                                                        #   zabbix does not like / in the key
-                                                                        #   Ex : mb/sec will be mb_per_sec
+        line_dict['module'] = list[0].lower()                               # Converting to lower case
+
+        if '/' in str(list[1]).lower():                                     # removing '=/' in field to 'per' and '_'
+            line_dict['oid_name'] = re.sub('/', '_per_', list[1].lower())   #   zabbix does not like / in the key
+        elif '=' in str(list[1]).lower():                                   #   Ex : mb/sec will be mb_per_sec
+            line_dict['oid_name'] = re.sub('=', '_', list[1].lower())       #   Ex : user=phone will be user_phone
+        else:                                                               #
+            line_dict['oid_name'] = re.sub('[\[\]/=*:,\'\"><]', '', list[1].lower())                         #
+
+
+
         line_dict['oid'] = list[2]
-        line_dict['datatype']  = list[3].upper()                        # making sure we have this as upper case
+        line_dict['datatype']  = list[3].upper()                            # making sure we have this as upper case
         line_dict['start'] = list[4]
         line_dict['end'] = list[5]
-        line_dict['description'] = list[6].strip()                      # Strip string.
+        line_dict['description'] = list[6].strip()                          # Strip string.
         oid_range_list = []
 
         if all_oid_range == True:
