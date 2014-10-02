@@ -48,10 +48,9 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
             line_dict['oid_name'] = re.sub('/', '_per_', list[1].lower())   #   zabbix does not like / in the key
         elif '=' in str(list[1]).lower():                                   #   Ex : mb/sec will be mb_per_sec
             line_dict['oid_name'] = re.sub('=', '_', list[1].lower())       #   Ex : user=phone will be user_phone
-        else:                                                               #
-            line_dict['oid_name'] = re.sub('[\[\]/=*:,\'\"><]', '', list[1].lower())                         #
-
-
+        else:
+            # other possible special char is removed
+            line_dict['oid_name'] = re.sub('[\[\]/=*:,\'\"><]', '', list[1].lower())
 
         line_dict['oid'] = list[2]
         line_dict['datatype']  = list[3].upper()                            # making sure we have this as upper case
