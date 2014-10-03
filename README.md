@@ -67,12 +67,13 @@ USAGE
 
      1. To Generate xml import file.
      --------------------------------------------
-     python zabbix_items_from_csv.py <export_csv> <host_name> <host_group_name> <host_interface_name> <host_application_name>
-     	example: python zabbix_items_from_csv.py oid_list_with_range_processed.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
+     python zabbix_items_from_csv.py <csv_file_to_process> <csv_name_file> <host_name> <host_group_name> <host_interface_name> <host_application_name>
+     	example: python zabbix_items_from_csv.py oid_list_with_range_processed.csv csv_name_file.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
 
      Parameter Information
      --------------------------------------------
      <csv_file_to_process>  : Is the csv file in format mentioned in the README.md file.
+     <csv_name_file>        : This csv file gives details of interfaces which are configured.
      <host_name>            : Host name as given in Zabbix server.
      <host_group_name>      : Host Group which the host belongs to, as in Zabbix server.
      <host_interface_ip>    : SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)
