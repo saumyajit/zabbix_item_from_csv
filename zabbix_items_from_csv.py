@@ -448,7 +448,7 @@ def help_menu():
      1. To Generate xml import file.
      --------------------------------------------
      python zabbix_items_from_csv.py <csv_file_to_process> <csv_name_file> <host_name> <host_group_name> <host_interface_name> <host_application_name>
-     \texample: python zabbix_items_from_csv.py oid_list_with_range_processed.csv csv_name_file.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
+     \texample: python zabbix_items_from_csv.py oid_list_with_range_processed.csv oid_names_configured.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
 
      Parameter Information
      --------------------------------------------
@@ -482,7 +482,7 @@ if __name__ == '__main__':
     # Creating a list of dictionaries [{},{},{}, ...]
     complete_csv_list_dict =  reader_csv_file(csv_file_to_process)
 
-    # Creating names dictionary
+    # Creating names dictionary {[{}{}{}][{}{}{}][{}...]...}
     complete_csv_names = read_csv_name_module(csv_names_files)
 
     # Merge above CSV files.
