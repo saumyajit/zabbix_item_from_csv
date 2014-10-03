@@ -96,6 +96,7 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
 
 
 def read_csv_name_module(file_name, skip_header=True):
+
     # Reading Property file for processing XML file.
     file_reader = open(file_name, "r")
 
@@ -117,10 +118,16 @@ def read_csv_name_module(file_name, skip_header=True):
         # Currently property file comments are '#'
         #
         if line[0] != "#":
+
             line = line.split(",")
+            # Create a {} to store.
             data_dict = {}
+
+            # adding to {}
             data_dict['module'] = line[0].strip().lower()
             data_dict['index'] = line[1].strip()
+
+            # Checking for sp char to be removed.
             if '+' in line[2].strip():
                 data_dict['name'] = re.sub('[+]', 'plus', line[2].strip())
             elif '#' in line[2].strip():
@@ -128,33 +135,50 @@ def read_csv_name_module(file_name, skip_header=True):
             else:
                 data_dict['name'] = re.sub('\#[\[\]/=*:,\'\"><]', '', line[2].strip())
 
+            # If we have the data already then append the {}
             if data_dict['module'] in module_name_index:
                 module_name_index[data_dict['module']].append(data_dict)
             else:
                 module_name_index[data_dict['module']] = [data_dict]
 
+    # Ready to return.
     return module_name_index
 
-
+#
+# Merging CSV files. [{}]
+#
 def merge_csv_data(list_from_oid, dict_from_names, only_name_items=False):
-    new_list = []
-    for items in list_from_oid:
-        if items['module'] in dict_from_names:
-            items['module_details'] = dict_from_names[items['module']]
-            new_list.append(items)
+    # Creating a list to store new data
+    merge_list_with_config_data = []
+
+    # Traversing the exsisting list.
+    for items_row_dict in list_from_oid:
+        # If we have the module in the dictionary then we append.
+        if items_row_dict['module'] in dict_from_names:
+            items_row_dict['module_details'] = dict_from_names[items_row_dict['module']]
+            merge_list_with_config_data.append(items_row_dict)
+
+        # Else we create a dummy oid {}
         else:
             # Lets create a dummy dictionary so that we can use it later.
             place_holder_dict = {}
-            place_holder_dict['module'] = items['module']
+            place_holder_dict['module'] = items_row_dict['module']
             place_holder_dict['index'] = '0'
-            place_holder_dict['name'] = items['oid']
-            if only_name_items:
-                items['module_details'] = []
-            else:
-                items['module_details'] = [place_holder_dict]
-            new_list.append(items)
+            place_holder_dict['name'] = items_row_dict['oid']
 
-    return new_list
+            # Check if we only want items which have been configured.
+            if only_name_items:
+                items_row_dict['module_details'] = []
+
+            # Else we add the dummy {}
+            else:
+                items_row_dict['module_details'] = [place_holder_dict]
+
+            # Create some data
+            merge_list_with_config_data.append(items_row_dict)
+
+    # ready to return.
+    return merge_list_with_config_data
 
 
 # --------------------------------------------------------
