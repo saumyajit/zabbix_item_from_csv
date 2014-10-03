@@ -82,6 +82,48 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
     return file_list
 
 
+def read_csv_name_module(file_name, skip_header=True):
+    # Reading Property file for processing XML file.
+    file_reader = open(file_name, "r")
+
+    # Skipping header line.
+    if skip_header:
+        file_reader.next()
+
+    module_name_index = {}
+
+    for line in file_reader:
+        line = line.split(",")
+        data_dict = {}
+        data_dict['module'] = line[0].strip().lower()
+        data_dict['index'] = line[1].strip()
+        data_dict['name'] = line[2].strip()
+        if data_dict['module'] in module_name_index:
+            module_name_index[data_dict['module']].append(data_dict)
+        else:
+            module_name_index[data_dict['module']] = [data_dict]
+
+    return module_name_index
+
+
+def merge_csv_data(list_from_oid, dict_from_names):
+    new_list = []
+    for items in list_from_oid:
+        if items['module'] in dict_from_names:
+            items['module_details'] = dict_from_names[items['module']]
+            new_list.append(items)
+        else:
+            # Lets create a dummy dictionary so that we can use it later.
+            place_holder_dict = {}
+            place_holder_dict['module'] = items['module']
+            place_holder_dict['index'] = '0'
+            place_holder_dict['name'] = items['oid']
+            items['module_details'] = [place_holder_dict]
+            new_list.append(items)
+
+    return new_list
+
+
 # --------------------------------------------------------
 # Generate Complete Export/Import XML File
 # --------------------------------------------------------
@@ -187,15 +229,18 @@ def generate_items_xml_file_complete(
     #
     for row_dict_from_file in list_from_file:
 
+        # if row_dict_from_file['module_details'] == []:
+        #     item_creator(row_dict_from_file, items, host_name.upper(), triggers, row_dict_from_file['oid'], item_application_name)
+
         # For each OID in the list - check function 'reader_csv_file' for more details.
-        for oid_list_item in row_dict_from_file['oid_list']:
+        for oid_list_item in row_dict_from_file['module_details']:
             item_creator(row_dict_from_file, items, host_name.upper(), triggers, oid_list_item, item_application_name)
 
 
     return ElementTree.tostring(zabbix_export)
 
 
-def item_creator(dictionary, items, host_name, triggers, oid_list_item_from_dictionary, item_application_name):
+def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item_from_dictionary, item_application_name):
     #
     # Creating an initial XML Template
     #
@@ -245,13 +290,15 @@ def item_creator(dictionary, items, host_name, triggers, oid_list_item_from_dict
     # Setting basic information for the item. Setting Values now.
     #
     name.text = 'From Module : (' + str(dictionary['module']).upper() + '), Sub Category : (' \
-                + str(dictionary['oid_name']).upper() + '), Item For OID : ' + oid_list_item_from_dictionary
+                + str(dictionary['oid_name']).upper() + '), Item For : ' + module_detail_dict_item_from_dictionary['name'] + \
+                    ', (' + str(dictionary['module']).upper() + '-INDEX-' +\
+                    str(module_detail_dict_item_from_dictionary['index']) + ')'
 
     # This has to be unique
-    key.text = dictionary['module'] +'_'+ dictionary['oid_name'] + '_' + oid_list_item_from_dictionary
+    key.text = dictionary['module'] +'_'+ dictionary['oid_name'] + '_' + module_detail_dict_item_from_dictionary['name']
 
     # Setting the OID here.
-    snmp_oid.text = oid_list_item_from_dictionary
+    snmp_oid.text = dictionary['oid'] + '.' + str(module_detail_dict_item_from_dictionary['index'])
 
     #
     # Setting value type to get information in int to string.
@@ -324,7 +371,9 @@ def item_creator(dictionary, items, host_name, triggers, oid_list_item_from_dict
         trigger_expression.text = '{' + host_name + ':'+ key.text +'.str("INS")}=0'
         trigger_name.text = 'ATTENTION : On {HOST.NAME}, An Alarm From Module : ('+ str(dictionary['module']).upper() \
                             + '), Sub Category : ('+ str(dictionary['oid_name']).upper() \
-                            + '), For OID : ' + dictionary['oid']
+                            + '), For : ' + module_detail_dict_item_from_dictionary['name'] + \
+                            ', (' + str(dictionary['module']).upper() + \
+                            '-INDEX-' + str(module_detail_dict_item_from_dictionary['index']) + ')'
 
         #
         # Setting default values here.
@@ -365,12 +414,13 @@ def help_menu():
 
      1. To Generate xml import file.
      --------------------------------------------
-     python zabbix_items_from_csv.py <export_csv> <host_name> <host_group_name> <host_interface_name> <host_application_name>
-     \texample: python zabbix_items_from_csv.py oid_list_with_range_processed.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
+     python zabbix_items_from_csv.py <csv_file_to_process> <csv_name_file> <host_name> <host_group_name> <host_interface_name> <host_application_name>
+     \texample: python zabbix_items_from_csv.py oid_list_with_range_processed.csv csv_name_file.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
 
      Parameter Information
      --------------------------------------------
      <csv_file_to_process>  : Is the csv file in format mentioned in the README.md file.
+     <csv_name_file>        : This csv file gives details of interfaces which are configured.
      <host_name>            : Host name as given in Zabbix server.
      <host_group_name>      : Host Group which the host belongs to, as in Zabbix server.
      <host_interface_ip>    : SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)
@@ -382,25 +432,33 @@ def help_menu():
 # --------------------------------------------------------
 # Process CSV to create zabbix items from OID and range.
 # --------------------------------------------------------
-if __name__ == '__main__':
+if __name__ == '__main__1':
 
     # System Arguments check
-    if len(sys.argv) == 1 or len(sys.argv) != 6:
+    if len(sys.argv) == 1 or len(sys.argv) != 7:
         help_menu()
 
     # Assigning Arguments
     csv_file_to_process = sys.argv[1]
-    host_name = sys.argv[2]
-    host_group_name = sys.argv[3]
-    host_interface = sys.argv[4]
-    host_application_items = sys.argv[5]
+    csv_names_files = sys.argv[2]
+    host_name = sys.argv[3]
+    host_group_name = sys.argv[4]
+    host_interface = sys.argv[5]
+    host_application_items = sys.argv[6]
 
     # Creating a list of dictionaries [{},{},{}, ...]
     complete_csv_list_dict =  reader_csv_file(csv_file_to_process)
 
+    # Creating names dictionary
+    complete_csv_names = read_csv_name_module(csv_names_files)
+
+    # Merge above CSV files.
+    list_for_processing = merge_csv_data(complete_csv_list_dict, complete_csv_names)
+
     # xml string returned.
-    xml_tree_for_device = generate_items_xml_file_complete(complete_csv_list_dict, host_name,
+    xml_tree_for_device = generate_items_xml_file_complete(list_for_processing, host_name,
                                                            host_group_name, host_interface,
                                                            host_application_items)
     # Write it to file as a pretty xml.
     xml_pretty_me(str(host_name).lower()+'_'+str(host_interface).lower()+'.xml', xml_tree_for_device)
+
