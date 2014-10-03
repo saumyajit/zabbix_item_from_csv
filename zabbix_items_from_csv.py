@@ -31,6 +31,19 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
     # Reading Lines now.
     for process_line in file_reader:
 
+        # Skip Empty Lines from property file.
+        if process_line in ['\n', '\r\n']:
+            continue
+
+        process_line = process_line.strip()
+
+        #
+        # Checking for property file comments
+        # Currently property file comments are '#'
+        #
+        if process_line[0] != "#":
+            list_of_values = process_line.split(",")
+
         # Check if we have a threshold to read line.
         if line_count > read_till:
             break
@@ -50,7 +63,7 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
             line_dict['oid_name'] = re.sub('=', '_', list[1].lower())       #   Ex : user=phone will be user_phone
         else:
             # other possible special char is removed
-            line_dict['oid_name'] = re.sub('[\[\]/=*:,\'\"><]', '', list[1].lower())
+            line_dict['oid_name'] = re.sub('[\[\]/=+*:,\'\"><]', '', list[1].lower())
 
         line_dict['oid'] = list[2]
         line_dict['datatype']  = list[3].upper()                            # making sure we have this as upper case
@@ -93,20 +106,37 @@ def read_csv_name_module(file_name, skip_header=True):
     module_name_index = {}
 
     for line in file_reader:
-        line = line.split(",")
-        data_dict = {}
-        data_dict['module'] = line[0].strip().lower()
-        data_dict['index'] = line[1].strip()
-        data_dict['name'] = line[2].strip()
-        if data_dict['module'] in module_name_index:
-            module_name_index[data_dict['module']].append(data_dict)
-        else:
-            module_name_index[data_dict['module']] = [data_dict]
+         # Skip Empty Lines from property file.
+        if line in ['\n', '\r\n']:
+            continue
+
+        line = line.strip()
+
+        #
+        # Checking for property file comments
+        # Currently property file comments are '#'
+        #
+        if line[0] != "#":
+            line = line.split(",")
+            data_dict = {}
+            data_dict['module'] = line[0].strip().lower()
+            data_dict['index'] = line[1].strip()
+            if '+' in line[2].strip():
+                data_dict['name'] = re.sub('[+]', 'plus', line[2].strip())
+            elif '#' in line[2].strip():
+                data_dict['name'] = re.sub('#', '', line[2].strip())
+            else:
+                data_dict['name'] = re.sub('\#[\[\]/=*:,\'\"><]', '', line[2].strip())
+
+            if data_dict['module'] in module_name_index:
+                module_name_index[data_dict['module']].append(data_dict)
+            else:
+                module_name_index[data_dict['module']] = [data_dict]
 
     return module_name_index
 
 
-def merge_csv_data(list_from_oid, dict_from_names):
+def merge_csv_data(list_from_oid, dict_from_names, only_name_items=False):
     new_list = []
     for items in list_from_oid:
         if items['module'] in dict_from_names:
@@ -118,7 +148,10 @@ def merge_csv_data(list_from_oid, dict_from_names):
             place_holder_dict['module'] = items['module']
             place_holder_dict['index'] = '0'
             place_holder_dict['name'] = items['oid']
-            items['module_details'] = [place_holder_dict]
+            if only_name_items:
+                items['module_details'] = []
+            else:
+                items['module_details'] = [place_holder_dict]
             new_list.append(items)
 
     return new_list
@@ -432,7 +465,7 @@ def help_menu():
 # --------------------------------------------------------
 # Process CSV to create zabbix items from OID and range.
 # --------------------------------------------------------
-if __name__ == '__main__1':
+if __name__ == '__main__':
 
     # System Arguments check
     if len(sys.argv) == 1 or len(sys.argv) != 7:
@@ -461,4 +494,3 @@ if __name__ == '__main__1':
                                                            host_application_items)
     # Write it to file as a pretty xml.
     xml_pretty_me(str(host_name).lower()+'_'+str(host_interface).lower()+'.xml', xml_tree_for_device)
-
