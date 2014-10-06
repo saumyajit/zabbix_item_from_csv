@@ -9,6 +9,9 @@ import re
 import datetime
 import sys
 from xml.dom import minidom
+import argparse
+__author__ = 'ahmed'
+
 
 def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=False):
 
@@ -491,26 +494,47 @@ def help_menu():
 # --------------------------------------------------------
 if __name__ == '__main__':
 
-    # System Arguments check
-    if len(sys.argv) == 1 or len(sys.argv) != 7:
-        help_menu()
+    parser = argparse.ArgumentParser(description='This script is to Generate xml import file for Zabbix from CSV files.'
+                                             'We need two CSV files.'
+                                             '1. OID file, gives all the OIDs in the device.'
+                                             '2. Name file, gives all names configured for the above OIDs in the Device.'
+                                             ' Example : python -o oid_list_with_range_processed.csv -c oid_names_configured.csv -n GGSN-1-LONDON -g GGSN-GROUP -i 127.0.0.1 -a GGSN-APP-OIDS -y ')
+    parser.add_argument('-o','--csv-oid', help='OID file, Gives all OIDs on the device', required=True)
+    parser.add_argument('-c','--csv-name', help='Name file, gives all names configured for the above OIDs in the Device.', required=True)
+    parser.add_argument('-n','--host-name', help='Host name as given in Zabbix server.', required=True)
+    parser.add_argument('-g','--host-group', help='Host Group which the host belongs to, as in Zabbix server.', required=True)
+    parser.add_argument('-i','--host-interface', help='SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)', required=True)
+    parser.add_argument('-a','--host-application', help='Application Name in the Zabbix Server. (To organize all items being imported)', required=True)
+    parser.add_argument('-y','--only-name', help='Create xml items which are present in the name file. i.e create items which are configured in the device already, Rest of the OIDs are Ignored. [Default : False]', action="store_true")
+    parser.add_argument('-f','--include-first-line', help='Include First line (Header) in the CSV file input, [Default : False]', action="store_true")
+    args = parser.parse_args()
+
 
     # Assigning Arguments
-    csv_file_to_process = sys.argv[1]
-    csv_names_files = sys.argv[2]
-    host_name = sys.argv[3]
-    host_group_name = sys.argv[4]
-    host_interface = sys.argv[5]
-    host_application_items = sys.argv[6]
+    csv_file_to_process = args.csv_oid
+    csv_names_files = args.csv_name
+    host_name = args.host_name
+    host_group_name = args.host_group
+    host_interface = args.host_interface
+    host_application_items = args.host_application
+
+    skip_header_state = True
+    if args.include_first_line:
+        skip_header_state = False
+
+    only_oid_in_name = False
+    if args.only_name:
+        only_oid_in_name = True
+
 
     # Creating a list of dictionaries [{},{},{}, ...]
-    complete_csv_list_dict =  reader_csv_file(csv_file_to_process)
+    complete_csv_list_dict =  reader_csv_file(csv_file_to_process, skip_header=skip_header_state)
 
     # Creating names dictionary {[{}{}{}][{}{}{}][{}...]...}
-    complete_csv_names = read_csv_name_module(csv_names_files)
+    complete_csv_names = read_csv_name_module(csv_names_files, skip_header=skip_header_state)
 
     # Merge above CSV files.
-    list_for_processing = merge_csv_data(complete_csv_list_dict, complete_csv_names)
+    list_for_processing = merge_csv_data(complete_csv_list_dict, complete_csv_names, only_name_items=only_oid_in_name)
 
     # xml string returned.
     xml_tree_for_device = generate_items_xml_file_complete(list_for_processing, host_name,

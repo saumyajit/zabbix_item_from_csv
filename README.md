@@ -84,17 +84,39 @@ zabbix_items_from_csv.xml_pretty_me('CHN-DEVICE_2.xml', xml_tree_string_device_2
 USAGE
 --------------------------------------------
 
-     1. To Generate xml import file.
-     --------------------------------------------
-     python zabbix_items_from_csv.py <csv_file_to_process> <csv_name_file> <host_name> <host_group_name> <host_interface_name> <host_application_name>
-     	example: python zabbix_items_from_csv.py oid_list_with_range_processed.csv csv_name_file.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
-
-     Parameter Information
-     --------------------------------------------
-     <csv_file_to_process>  : Is the csv file in format mentioned in the README.md file.
-     <csv_name_file>        : This csv file gives details of interfaces which are configured.
-     <host_name>            : Host name as given in Zabbix server.
-     <host_group_name>      : Host Group which the host belongs to, as in Zabbix server.
-     <host_interface_ip>    : SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)
-     <host_application_name>: Application Name in the Zabbix Server. (To organize all items being imported)
-     --------------------------------------------
+    usage: zabbix_items_from_csv.py [-h] -o CSV_OID -c CSV_NAME -n HOST_NAME -g
+                                    HOST_GROUP -i HOST_INTERFACE -a
+                                    HOST_APPLICATION [-y] [-f]
+    
+    This script is to Generate xml import file for Zabbix from CSV files.We need
+    two CSV files.1. OID file, gives all the OIDs in the device.2. Name file,
+    gives all names configured for the above OIDs in the Device. 
+    
+    Example : python -o oid_list_with_range_processed.csv -c oid_names_configured.csv -n
+    GGSN-1-LONDON -g GGSN-GROUP -i 127.0.0.1 -a GGSN-APP-OIDS -y
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      -o CSV_OID, --csv-oid CSV_OID
+                            OID file, Gives all OIDs on the device
+      -c CSV_NAME, --csv-name CSV_NAME
+                            Name file, gives all names configured for the above
+                            OIDs in the Device.
+      -n HOST_NAME, --host-name HOST_NAME
+                            Host name as given in Zabbix server.
+      -g HOST_GROUP, --host-group HOST_GROUP
+                            Host Group which the host belongs to, as in Zabbix
+                            server.
+      -i HOST_INTERFACE, --host-interface HOST_INTERFACE
+                            SNMP Interface configured on Zabbix server. (Assuming
+                            Single Interface in Configured)
+      -a HOST_APPLICATION, --host-application HOST_APPLICATION
+                            Application Name in the Zabbix Server. (To organize
+                            all items being imported)
+      -y, --only-name       Create xml items which are present in the name file.
+                            i.e create items which are configured in the device
+                            already, Rest of the OIDs are Ignored. [Default :
+                            False]
+      -f, --include-first-line
+                            Include First line (Header) in the CSV file input,
+                            [Default : False]
