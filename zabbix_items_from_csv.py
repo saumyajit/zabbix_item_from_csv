@@ -7,7 +7,6 @@ from xml.etree.ElementTree import SubElement
 import logging
 import re
 import datetime
-import sys
 from xml.dom import minidom
 import argparse
 __author__ = 'ahmed'
@@ -357,6 +356,9 @@ def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item
     # This has to be unique
     key.text = dictionary['module'] +'_'+ dictionary['oid_name'] + '_' + module_detail_dict_item_from_dictionary['name']
 
+    # For Verbose Mode
+    logging.debug('Key Generated as : ' + str(key.text))
+
     # Setting the OID here.
     snmp_oid.text = dictionary['oid'] + '.' + str(module_detail_dict_item_from_dictionary['index'])
 
@@ -448,7 +450,7 @@ def xml_pretty_me(file_name_for_prettify, string_to_prettify):
     #
     # Open a file and write to it and we are done.
     #
-    logging.info("Creating File pretty_%s", file_name_for_prettify)
+    logging.debug("Creating File pretty_%s", file_name_for_prettify)
 
     # Creating an XML and prettify xml.
     xml = minidom.parseString(string_to_prettify)
@@ -459,35 +461,9 @@ def xml_pretty_me(file_name_for_prettify, string_to_prettify):
     output_file.write(pretty_xml_as_string)
 
     # Done.
-    logging.info("Creation Complete")
+    logging.debug("Creation Complete")
     output_file.close()
 
-# --------------------------------------------------------
-# Help Menu
-# --------------------------------------------------------
-def help_menu():
-    logging.error(" Wrong Arguments - Please see below for more information")
-    logging.error("""\n
-     --------------------------------------------
-                        USAGE
-     --------------------------------------------
-
-     1. To Generate xml import file.
-     --------------------------------------------
-     python zabbix_items_from_csv.py <csv_file_to_process> <csv_name_file> <host_name> <host_group_name> <host_interface_name> <host_application_name>
-     \texample: python zabbix_items_from_csv.py oid_list_with_range_processed.csv oid_names_configured.csv GGSN-1-LONDON GGSN-GROUP 127.0.0.1 GGSN-APP-OIDS
-
-     Parameter Information
-     --------------------------------------------
-     <csv_file_to_process>  : Is the csv file in format mentioned in the README.md file.
-     <csv_name_file>        : This csv file gives details of interfaces which are configured.
-     <host_name>            : Host name as given in Zabbix server.
-     <host_group_name>      : Host Group which the host belongs to, as in Zabbix server.
-     <host_interface_ip>    : SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)
-     <host_application_name>: Application Name in the Zabbix Server. (To organize all items being imported)
-     --------------------------------------------
-     """)
-    exit()
 
 # --------------------------------------------------------
 # Process CSV to create zabbix items from OID and range.
@@ -507,6 +483,9 @@ if __name__ == '__main__':
     parser.add_argument('-a','--host-application', help='Application Name in the Zabbix Server. (To organize all items being imported)', required=True)
     parser.add_argument('-y','--only-name', help='Create xml items which are present in the name file. i.e create items which are configured in the device already, Rest of the OIDs are Ignored. [Default : False]', action="store_true")
     parser.add_argument('-f','--include-first-line', help='Include First line (Header) in the CSV file input, [Default : False]', action="store_true")
+    parser.add_argument('-d', '--debug', help='Running Debug mode - More Verbose', action="store_true")
+    parser.add_argument('-v', '--verbose', help='Running Debug mode - More Verbose', action="store_true")
+
     args = parser.parse_args()
 
 
@@ -526,6 +505,11 @@ if __name__ == '__main__':
     if args.only_name:
         only_oid_in_name = True
 
+
+    if args.debug or args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     # Creating a list of dictionaries [{},{},{}, ...]
     complete_csv_list_dict =  reader_csv_file(csv_file_to_process, skip_header=skip_header_state)
