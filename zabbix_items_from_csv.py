@@ -485,6 +485,7 @@ if __name__ == '__main__':
     parser.add_argument('-f','--include-first-line', help='Include First line (Header) in the CSV file input, [Default : False]', action="store_true")
     parser.add_argument('-d', '--debug', help='Running Debug mode - More Verbose', action="store_true")
     parser.add_argument('-v', '--verbose', help='Running Debug mode - More Verbose', action="store_true")
+    parser.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
     args = parser.parse_args()
 
