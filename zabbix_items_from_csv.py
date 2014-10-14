@@ -394,8 +394,12 @@ def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item
     authtype.text = '0'
     inventory_link.text = '0'
     interface_ref.text = 'if1'
-    delay.text = '60'
-    history.text = '90'
+    if str(dictionary['oid_name']).upper() == "STATUS":
+        delay.text = '60'
+        history.text = '90'
+    else:
+        delay.text = '3600'
+        history.text = '9000'
     trends.text = '365'
     status.text = '0'
     snmp_community.text = '{$SNMP_COMMUNITY}'
