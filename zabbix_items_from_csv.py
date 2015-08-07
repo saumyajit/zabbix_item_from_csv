@@ -9,11 +9,11 @@ import re
 import datetime
 from xml.dom import minidom
 import argparse
+
 __author__ = 'ahmed'
 
 
 def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=False):
-
     # Reading Property file for processing XML file.
     file_reader = open(file_name, "r")
 
@@ -47,31 +47,33 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
             list_of_values = process_line.split(",")
 
         # Check if we have a threshold to read line.
-        if line_count > read_till:
+        if read_till < line_count:
             break
 
         # Create a temp dictionary to hold the line.
         line_dict = {}
 
         # Split line by ','
-        list = process_line.split(",")
+        list_proc_line_split = process_line.split(",")
 
         # Getting All data into the dictionary
-        line_dict['module'] = list[0].lower()                               # Converting to lower case
+        line_dict['module'] = list_proc_line_split[0].lower()  # Converting to lower case
 
-        if '/' in str(list[1]).lower():                                     # removing '=/' in field to 'per' and '_'
-            line_dict['oid_name'] = re.sub('/', '_per_', list[1].lower())   #   zabbix does not like / in the key
-        elif '=' in str(list[1]).lower():                                   #   Ex : mb/sec will be mb_per_sec
-            line_dict['oid_name'] = re.sub('=', '_', list[1].lower())       #   Ex : user=phone will be user_phone
+        if '/' in str(list_proc_line_split[1]).lower():  # removing '=/' in field to 'per' and '_'
+            line_dict['oid_name'] = re.sub('/', '_per_',
+                                           list_proc_line_split[1].lower())  # zabbix does not like / in the key
+        elif '=' in str(list_proc_line_split[1]).lower():  # Ex : mb/sec will be mb_per_sec
+            line_dict['oid_name'] = re.sub('=', '_',
+                                           list_proc_line_split[1].lower())  # Ex : user=phone will be user_phone
         else:
             # other possible special char is removed
-            line_dict['oid_name'] = re.sub('[\[\]/=+*:,\'\"><]', '', list[1].lower())
+            line_dict['oid_name'] = re.sub('[\[\]/=+*:,\'\"><]', '', list_proc_line_split[1].lower())
 
-        line_dict['oid'] = list[2]
-        line_dict['datatype']  = list[3].upper()                            # making sure we have this as upper case
-        line_dict['start'] = list[4]
-        line_dict['end'] = list[5]
-        line_dict['description'] = list[6].strip()                          # Strip string.
+        line_dict['oid'] = list_proc_line_split[2]
+        line_dict['datatype'] = list_proc_line_split[3].upper()  # making sure we have this as upper case
+        line_dict['start'] = list_proc_line_split[4]
+        line_dict['end'] = list_proc_line_split[5]
+        line_dict['description'] = list_proc_line_split[6].strip()  # Strip string.
         oid_range_list = []
 
         if all_oid_range:
@@ -88,17 +90,16 @@ def reader_csv_file(file_name, read_till=99999, skip_header=True, all_oid_range=
             oid_range_created = line_dict['oid'] + '.' + str(oid_range)
             oid_range_list.append(oid_range_created)
 
-        line_dict['oid_list'] = oid_range_list                          # Adding the list to dictionary
+        line_dict['oid_list'] = oid_range_list  # Adding the list to dictionary
 
         # Our row is ready to be added to the list.
         file_list.append(line_dict)
-        line_count = line_count + 1
+        line_count += 1
 
     return file_list
 
 
 def read_csv_name_module(file_name, skip_header=True):
-
     # Reading Property file for processing XML file.
     file_reader = open(file_name, "r")
 
@@ -109,7 +110,7 @@ def read_csv_name_module(file_name, skip_header=True):
     module_name_index = {}
 
     for line in file_reader:
-         # Skip Empty Lines from property file.
+        # Skip Empty Lines from property file.
         if line in ['\n', '\r\n']:
             continue
 
@@ -123,11 +124,9 @@ def read_csv_name_module(file_name, skip_header=True):
 
             line = line.split(",")
             # Create a {} to store.
-            data_dict = {}
+            data_dict = {'module': line[0].strip().lower(), 'index': line[1].strip()}
 
             # adding to {}
-            data_dict['module'] = line[0].strip().lower()
-            data_dict['index'] = line[1].strip()
 
             # Checking for sp char to be removed.
             if '+' in line[2].strip():
@@ -135,7 +134,7 @@ def read_csv_name_module(file_name, skip_header=True):
             elif '#' in line[2].strip():
                 data_dict['name'] = re.sub('#', '', line[2].strip())
             else:
-                data_dict['name'] = re.sub('\#[\[\]/=*:,\'\"><]', '', line[2].strip())
+                data_dict['name'] = re.sub('#[\[\]/=*:,\'\"><]', '', line[2].strip())
 
             # If we have the data already then append the {}
             if data_dict['module'] in module_name_index:
@@ -145,6 +144,7 @@ def read_csv_name_module(file_name, skip_header=True):
 
     # Ready to return.
     return module_name_index
+
 
 #
 # Merging CSV files. [{}]
@@ -163,10 +163,7 @@ def merge_csv_data(list_from_oid, dict_from_names, only_name_items=False):
         # Else we create a dummy oid {}
         else:
             # Lets create a dummy dictionary so that we can use it later.
-            place_holder_dict = {}
-            place_holder_dict['module'] = items_row_dict['module']
-            place_holder_dict['index'] = '0'
-            place_holder_dict['name'] = items_row_dict['oid']
+            place_holder_dict = {'module': items_row_dict['module'], 'index': '0', 'name': items_row_dict['oid']}
 
             # Check if we only want items which have been configured.
             if only_name_items:
@@ -187,11 +184,11 @@ def merge_csv_data(list_from_oid, dict_from_names, only_name_items=False):
 # Generate Complete Export/Import XML File
 # --------------------------------------------------------
 def generate_items_xml_file_complete(
-                                    list_from_file,
-                                    host_name,
-                                    host_group_name,
-                                    host_interface,
-                                    item_application_name=None):
+        list_from_file,
+        host_name_in_gen_item,
+        host_group_name_in_gen_item,
+        host_interface_in_gen_item,
+        item_application_name=None):
 
     # Date format for the new file created.
     fmt = '%Y-%m-%dT%H:%M:%SZ'
@@ -201,7 +198,7 @@ def generate_items_xml_file_complete(
 
     # Sub Element which fall under zabbix_export
     version = SubElement(zabbix_export, 'version')
-    date =  SubElement(zabbix_export, 'date')
+    date = SubElement(zabbix_export, 'date')
 
     # Groups
     groups = SubElement(zabbix_export, 'groups')
@@ -215,7 +212,7 @@ def generate_items_xml_file_complete(
     hosts = SubElement(zabbix_export, 'hosts')
     host_under_hosts = SubElement(hosts, 'host')
     host_under_host = SubElement(host_under_hosts, 'host')
-    name_under_host = SubElement(host_under_hosts,'name')
+    name_under_host = SubElement(host_under_hosts, 'name')
 
     SubElement(host_under_hosts, 'proxy')
 
@@ -259,11 +256,11 @@ def generate_items_xml_file_complete(
 
     # This information will be from the user.
     date.text = datetime.datetime.now().strftime(fmt)
-    host_under_host.text = host_name.upper()
-    name_under_host.text = host_name.upper()
-    name_under_group.text = host_group_name.upper()
-    ip_under_interface.text = host_interface
-    name_group_under_groups_host.text = host_group_name.upper()
+    host_under_host.text = host_name_in_gen_item.upper()
+    name_under_host.text = host_name_in_gen_item.upper()
+    name_under_group.text = host_group_name_in_gen_item.upper()
+    ip_under_interface.text = host_interface_in_gen_item
+    name_group_under_groups_host.text = host_group_name_in_gen_item.upper()
 
     # Standard values
     version.text = '2.0'
@@ -282,24 +279,25 @@ def generate_items_xml_file_complete(
     #
     # Processing through the list of OID from the list in the dictionary
     # This actually a range as in the csv file
-    #   If we have set 'all_oid_range' as true, then we will process all the OID range for each OID
-    #   Warning : There will be too many Items in the import file.
-    #             BE CAREFUL WITH THE RANGE.
+    # If we have set 'all_oid_range' as true, then we will process all the OID range for each OID
+    # Warning : There will be too many Items in the import file.
+    # BE CAREFUL WITH THE RANGE.
     #
     for row_dict_from_file in list_from_file:
 
         # if row_dict_from_file['module_details'] == []:
-        #     item_creator(row_dict_from_file, items, host_name.upper(), triggers, row_dict_from_file['oid'], item_application_name)
+        # item_creator(row_dict_from_file, items, host_name.upper(), triggers, row_dict_from_file['oid'], item_application_name)
 
         # For each OID in the list - check function 'reader_csv_file' for more details.
         for oid_list_item in row_dict_from_file['module_details']:
-            item_creator(row_dict_from_file, items, host_name.upper(), triggers, oid_list_item, item_application_name)
-
+            item_creator(row_dict_from_file, items, host_name_in_gen_item.upper(), triggers, oid_list_item,
+                         item_application_name)
 
     return ElementTree.tostring(zabbix_export)
 
 
-def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item_from_dictionary, item_application_name):
+def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item_from_dictionary,
+                 item_application_name):
     #
     # Creating an initial XML Template
     #
@@ -349,12 +347,14 @@ def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item
     # Setting basic information for the item. Setting Values now.
     #
     name.text = 'From Module : (' + str(dictionary['module']).upper() + '), Sub Category : (' \
-                + str(dictionary['oid_name']).upper() + '), Item For : ' + module_detail_dict_item_from_dictionary['name'] + \
-                    ', (' + str(dictionary['module']).upper() + '-INDEX-' +\
-                    str(module_detail_dict_item_from_dictionary['index']) + ')'
+                + str(dictionary['oid_name']).upper() + '), Item For : ' + module_detail_dict_item_from_dictionary[
+                    'name'] + \
+                ', (' + str(dictionary['module']).upper() + '-INDEX-' + \
+                str(module_detail_dict_item_from_dictionary['index']) + ')'
 
     # This has to be unique
-    key.text = dictionary['module'] +'_'+ dictionary['oid_name'] + '_' + module_detail_dict_item_from_dictionary['name']
+    key.text = dictionary['module'] + '_' + dictionary['oid_name'] + '_' + module_detail_dict_item_from_dictionary[
+        'name']
 
     # For Verbose Mode
     logging.debug('Key Generated as : ' + str(key.text))
@@ -434,9 +434,9 @@ def item_creator(dictionary, items, host_name, triggers, module_detail_dict_item
 
         # Creating a expression - important stuff here.
         # TODO : This might change as per requirement.
-        trigger_expression.text = '{' + host_name + ':'+ key.text +'.str("INS")}=0'
-        trigger_name.text = 'ATTENTION : On {HOST.NAME}, An Alarm From Module : ('+ str(dictionary['module']).upper() \
-                            + '), Sub Category : ('+ str(dictionary['oid_name']).upper() \
+        trigger_expression.text = '{' + host_name + ':' + key.text + '.str("INS")}=0'
+        trigger_name.text = 'ATTENTION : On {HOST.NAME}, An Alarm From Module : (' + str(dictionary['module']).upper() \
+                            + '), Sub Category : (' + str(dictionary['oid_name']).upper() \
                             + '), For : ' + module_detail_dict_item_from_dictionary['name'] + \
                             ', (' + str(dictionary['module']).upper() + \
                             '-INDEX-' + str(module_detail_dict_item_from_dictionary['index']) + ')'
@@ -461,7 +461,7 @@ def xml_pretty_me(file_name_for_prettify, string_to_prettify):
     pretty_xml_as_string = xml.toprettyxml()
 
     # Creating a file to write this information.
-    output_file = open(file_name_for_prettify, 'w' )
+    output_file = open(file_name_for_prettify, 'w')
     output_file.write(pretty_xml_as_string)
 
     # Done.
@@ -475,18 +475,28 @@ def xml_pretty_me(file_name_for_prettify, string_to_prettify):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='This script is to Generate xml import file for Zabbix from CSV files.'
-                                             'We need two CSV files.'
-                                             '1. OID file, gives all the OIDs in the device.'
-                                             '2. Name file, gives all names configured for the above OIDs in the Device.'
-                                             ' Example : python -o oid_list_with_range_processed.csv -c oid_names_configured.csv -n GGSN-1-LONDON -g GGSN-GROUP -i 127.0.0.1 -a GGSN-APP-OIDS -y ')
-    parser.add_argument('-o','--csv-oid', help='OID file, Gives all OIDs on the device', required=True)
-    parser.add_argument('-c','--csv-name', help='Name file, gives all names configured for the above OIDs in the Device.', required=True)
-    parser.add_argument('-n','--host-name', help='Host name as given in Zabbix server.', required=True)
-    parser.add_argument('-g','--host-group', help='Host Group which the host belongs to, as in Zabbix server.', required=True)
-    parser.add_argument('-i','--host-interface', help='SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)', required=True)
-    parser.add_argument('-a','--host-application', help='Application Name in the Zabbix Server. (To organize all items being imported)', required=True)
-    parser.add_argument('-y','--only-name', help='Create xml items which are present in the name file. i.e create items which are configured in the device already, Rest of the OIDs are Ignored. [Default : False]', action="store_true")
-    parser.add_argument('-f','--include-first-line', help='Include First line (Header) in the CSV file input, [Default : False]', action="store_true")
+                                                 'We need two CSV files.'
+                                                 '1. OID file, gives all the OIDs in the device.'
+                                                 '2. Name file, gives all names configured for the above OIDs in the Device.'
+                                                 ' Example : python -o oid_list_with_range_processed.csv -c oid_names_configured.csv -n GGSN-1-LONDON -g GGSN-GROUP -i 127.0.0.1 -a GGSN-APP-OIDS -y ')
+    parser.add_argument('-o', '--csv-oid', help='OID file, Gives all OIDs on the device', required=True)
+    parser.add_argument('-c', '--csv-name',
+                        help='Name file, gives all names configured for the above OIDs in the Device.', required=True)
+    parser.add_argument('-n', '--host-name', help='Host name as given in Zabbix server.', required=True)
+    parser.add_argument('-g', '--host-group', help='Host Group which the host belongs to, as in Zabbix server.',
+                        required=True)
+    parser.add_argument('-i', '--host-interface',
+                        help='SNMP Interface configured on Zabbix server. (Assuming Single Interface in Configured)',
+                        required=True)
+    parser.add_argument('-a', '--host-application',
+                        help='Application Name in the Zabbix Server. (To organize all items being imported)',
+                        required=True)
+    parser.add_argument('-y', '--only-name',
+                        help='Create xml items which are present in the name file. i.e create items which are configured in the device already, Rest of the OIDs are Ignored. [Default : False]',
+                        action="store_true")
+    parser.add_argument('-f', '--include-first-line',
+                        help='Include First line (Header) in the CSV file input, [Default : False]',
+                        action="store_true")
     parser.add_argument('-d', '--debug', help='Running Debug mode - More Verbose', action="store_true")
     parser.add_argument('-v', '--verbose', help='Running Debug mode - More Verbose', action="store_true")
     parser.add_argument('--version', action='version', version='%(prog)s 0.1.0')
@@ -510,14 +520,13 @@ if __name__ == '__main__':
     if args.only_name:
         only_oid_in_name = True
 
-
     if args.debug or args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
 
     # Creating a list of dictionaries [{},{},{}, ...]
-    complete_csv_list_dict =  reader_csv_file(csv_file_to_process, skip_header=skip_header_state)
+    complete_csv_list_dict = reader_csv_file(csv_file_to_process, skip_header=skip_header_state)
 
     # Creating names dictionary {[{}{}{}][{}{}{}][{}...]...}
     complete_csv_names = read_csv_name_module(csv_names_files, skip_header=skip_header_state)
@@ -530,4 +539,4 @@ if __name__ == '__main__':
                                                            host_group_name, host_interface,
                                                            host_application_items)
     # Write it to file as a pretty xml.
-    xml_pretty_me(str(host_name).lower()+'_'+str(host_interface).lower()+'.xml', xml_tree_for_device)
+    xml_pretty_me(str(host_name).lower() + '_' + str(host_interface).lower() + '.xml', xml_tree_for_device)
